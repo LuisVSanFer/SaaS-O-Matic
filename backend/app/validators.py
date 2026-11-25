@@ -82,16 +82,19 @@ def _validate_cif(cif: str) -> bool:
     except KeyError:
         return False
 
-    # Official AEAT algorithm: weights from RIGHT to LEFT on the 7 digits: 1,2,1,2,1,2,1
-    # Then add the letter value
+    # Official AEAT algorithm for CIF:
+    # - Digits in odd positions (1st, 3rd, 5th, 7th) are multiplied by 2
+    # - Digits in even positions (2nd, 4th, 6th) are added as-is
+    # - Sum all, control digit = (10 - (sum % 10)) % 10
     total = 0
     digits = [int(d) for d in body_digits]
-    for i, d in enumerate(reversed(digits)):
-        weight = 1 if i % 2 == 0 else 2
-        product = d * weight
-        total += product if product < 10 else product - 9
+    for i, d in enumerate(digits):
+        if i % 2 == 0:  # odd position (1st, 3rd, 5th, 7th)
+            product = d * 2
+            total += product if product < 10 else product - 9
+        else:  # even position (2nd, 4th, 6th)
+            total += d
 
-    total += letter_value
     control_digit = (10 - (total % 10)) % 10
 
     if control_char.isdigit():

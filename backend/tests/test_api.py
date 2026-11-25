@@ -9,17 +9,17 @@ class TestCustomerEndpoints:
         """Test successful customer creation."""
         response = client.post("/customers", json={
             "company_name": "Test Company",
-            "tax_id": "B87654327",  # Valid CIF with correct control digit
+            "tax_id": "B87654323",  # Valid CIF with correct control digit
             "email": "test@company.com",
             "country": "ES",
             "plan": "Professional"
         })
         data = response.json()
-        assert data["tax_id"] == "B87654327"
+        assert data["tax_id"] == "B87654323"
         assert response.status_code == 201
         data = response.json()
         assert data["company_name"] == "Test Company"
-        assert data["tax_id"] == "B87654327"
+        assert data["tax_id"] == "B87654323"
         assert data["email"] == "test@company.com"
         assert data["country"] == "ES"
         assert data["plan"] == "Professional"
@@ -93,7 +93,7 @@ class TestCustomerEndpoints:
         """Test customer creation with valid CIF."""
         response = client.post("/customers", json={
             "company_name": "Empresa SL",
-            "tax_id": "B87654327",  # Valid CIF with correct control digit
+            "tax_id": "B87654323",  # Valid CIF with correct control digit
             "email": "empresa@test.com",
             "country": "ES",
             "plan": "Professional"
@@ -116,7 +116,7 @@ class TestCustomerEndpoints:
         """Test duplicate tax ID in same country is rejected."""
         response = client.post("/customers", json={
             "company_name": "Another Company",
-            "tax_id": "B87654327",  # Same as sample_customer
+            "tax_id": "B87654323",  # Same as sample_customer
             "email": "another@company.com",
             "country": "ES",  # Same country
             "plan": "Basic"

@@ -70,8 +70,30 @@ const CustomerSearch: React.FC<CustomerSearchProps> = ({
       setShowCreateForm(false);
       setNewCustomer({ company_name: '', tax_id: '', email: '', country: 'ES', plan: 'Professional' });
       loadCustomers();
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error creating customer:', err);
+      const detail = err.response?.data?.detail;
+      const status = err.response?.status;
+
+      // Case 1: 409 Conflict - Duplicate tax_id (detail is a string)
+      if (status === 409 && typeof detail === 'string' && detail.includes('already exists')) {
+        showToast('Error al crear cliente: Ya existe un cliente con este NIF/CIF en el mismo país.', 'error');
+        return;
+      }
+
+      // Case 2: 422 Validation Error - Invalid Spanish tax ID (detail is an array)
+      if (status === 422 && Array.isArray(detail)) {
+        const msg = detail[0]?.msg;
+        if (msg?.includes('Invalid Spanish tax ID')) {
+          showToast('Error al crear cliente: NIF/CIF inválido. Verifique el formato.', 'error');
+          return;
+        }
+        // Other validation errors
+        showToast(`Error de validación: ${msg || 'Datos inválidos'}`, 'error');
+        return;
+      }
+
+      // Generic fallback
       showToast('Error al crear cliente. Verifique que el NIF/CIF sea válido y no exista ya.', 'error');
     };
   };

@@ -51,7 +51,7 @@ def sample_customer(db_session):
     """Create a sample customer for testing."""
     customer = Customer(
         company_name="Test Company",
-        tax_id="B87654327",  # Valid CIF with correct control digit
+        tax_id="B87654323",  # Valid CIF with correct control digit
         email="test@company.com",
         country="ES",
         plan="Professional"

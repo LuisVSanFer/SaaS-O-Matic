@@ -26,16 +26,16 @@
 | Step | Action | Expected |
 |------|--------|----------|
 | 1 | Click "Nuevo Cliente" | Modal opens |
-| 2 | Fill: Empresa="Test CIF", NIF="B87654327", Email="cif@test.com", País="ES", Plan="Professional" | Form accepts |
+| 2 | Fill: Empresa="Test CIF", NIF="B87654323", Email="cif@test.com", País="ES", Plan="Professional" | Form accepts |
 | 3 | Click "Crear" | ✅ Success |
-| 4 | Test letter control: P1111111J | ✅ Success |
+| 4 | Test letter control: P1111111I | ✅ Success |
 
 ### TC-04: Create Customer - Invalid Spanish Tax ID (Rejected)
 | Step | Action | Expected |
 |------|--------|----------|
 | 1 | Click "Nuevo Cliente" | Modal opens |
 | 2 | Fill: Empresa="Bad Tax", NIF="12345678A", País="ES" | Form accepts |
-| 3 | Click "Crear" | ❌ Toast error: "Invalid Spanish tax ID (DNI/NIE/CIF)" |
+| 3 | Click "Crear" | ❌ Toast error: "Error al crear cliente: NIF/CIF inválido. Verifique el formato." |
 | 4 | Customer NOT created | ✅ |
 
 ### TC-05: Create Customer - Non-Spain (No Spanish Validation)
@@ -49,14 +49,14 @@
 ### TC-06: Duplicate Tax ID Same Country (Rejected)
 | Step | Action | Expected |
 |------|--------|----------|
-| 1 | Create customer with B87654327, ES | ✅ Success |
-| 2 | Create another with same tax_id, ES | ❌ Toast error: "already exists" |
+| 1 | Create customer with B87654323, ES | ✅ Success |
+| 2 | Create another with same tax_id, ES | ❌ Toast error: "Error al crear cliente: Ya existe un cliente con este NIF/CIF en el mismo país." |
 
 ### TC-07: Same Tax ID Different Country (Allowed)
 | Step | Action | Expected |
 |------|--------|----------|
-| 1 | Create customer with B87654327, ES | ✅ Success |
-| 2 | Create another with B87654327, DE | ✅ Success |
+| 1 | Create customer with B87654323, ES | ✅ Success |
+| 2 | Create another with B87654323, DE | ✅ Success |
 
 ---
 
@@ -159,13 +159,13 @@
 ### TC-20: Search by Tax ID
 | Step | Action | Expected |
 |------|--------|----------|
-| 1 | Type "B87654327" | Shows that customer |
+| 1 | Type "B87654323" | Shows that customer |
 
 ### TC-21: Search by Company Name or Tax ID (Email not searchable)
 | Step | Action | Expected |
 |------|--------|----------|
 | 1 | Type "@test.com" | No results (search limited to company name and tax ID) |
-| 2 | Type "B87654327" or "Test" | Shows matching customers |
+| 2 | Type "B87654323" or "Test" | Shows matching customers |
 
 ---
 
@@ -201,7 +201,7 @@
 
 Run these 5 tests before any deploy:
 
-1. **Create** → Spanish customer with valid CIF (B87654327)
+1. **Create** → Spanish customer with valid CIF (B87654323)
 2. **Preview** → Move sliders, verify tier jumps at 10/11 and 50/51 users
 3. **Currency** → Switch EUR→USD→EUR, verify conversion
 4. **Save** → Click "Guardar simulación", verify history entry
@@ -213,7 +213,7 @@ Run these 5 tests before any deploy:
 
 | Issue | Test | Status |
 |-------|------|--------|
-| CIF validation rejected valid B87654321 | TC-03 | ✅ Fixed (use B87654327) |
+| CIF validation rejected valid B87654321 | TC-03 | ✅ Fixed (use B87654323) |
 | NIE Y/Z prefixes rejected | TC-02 | ✅ Fixed (use Y8765432P, Z9999999H) |
 | Slider/input out of sync | TC-09 | ✅ Controlled components |
 | No delete confirmation | TC-16, TC-17 | ✅ window.confirm added |
@@ -232,11 +232,11 @@ Run these 5 tests before any deploy:
 | NIE (X) | X1234567L | Control L |
 | NIE (Y) | Y8765432P | Control P |
 | NIE (Z) | Z9999999H | Control H |
-| CIF | B87654327 | Control 7 |
-| CIF | A12345679 | Control 9 |
+| CIF | B87654323 | Control 3 |
+| CIF | A12345674 | Control 4 |
 | CIF | G55555551 | Control 1 |
-| CIF | Q12345678 | Control 8 |
-| CIF (letter) | P1111111J | Control J=0 |
+| CIF | Q12345674 | Control 4 |
+| CIF (letter) | P1111111I | Control I=1 |
 
 ### Tier Boundaries (users → base €)
 | Users | Base (¢) | Base (€) |
