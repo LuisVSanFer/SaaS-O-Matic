@@ -107,11 +107,14 @@ const CustomerSearch: React.FC<CustomerSearchProps> = ({
               <option key={currency} value={currency}>{currency}</option>
             ))}
           </select>
+          <span style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 500, padding: '4px 8px', background: '#f1f5f9', borderRadius: '4px' }}>
+            Tasa: {(exchangeRates[selectedCurrency] ?? 1).toFixed(2)}
+          </span>
           <button
             className="btn btn-primary"
             onClick={() => setShowCreateForm(!showCreateForm)}
           >
-            {showCreateForm ? 'Cancelar' : '+ Nuevo Cliente'}
+            {showCreateForm ? 'Cancelar' : 'Nuevo Cliente'}
           </button>
         </div>
       </div>

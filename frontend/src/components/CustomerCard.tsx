@@ -3,6 +3,7 @@ import { simulationApi, customerApi, formatCurrency } from '../services/api';
 import type { Customer, Simulation, ExchangeRates } from '../types';
 import SimulationPreview from './SimulationPreview';
 import { useToast } from '../hooks/useToast';
+import { Toast } from './Toast';
 
 interface CustomerCardProps {
   customer: Customer;
@@ -19,7 +20,7 @@ const CustomerCard: React.FC<CustomerCardProps> = ({
   onCurrencyChange = () => {},
   onDelete
 }) => {
-  const { showToast } = useToast();
+  const { toasts, showToast, dismissToast } = useToast();
   const [simulations, setSimulations] = useState<Simulation[]>([]);
   const [loading, setLoading] = useState(false);
   const [showSimulations, setShowSimulations] = useState(false);
@@ -55,6 +56,7 @@ const CustomerCard: React.FC<CustomerCardProps> = ({
         customer_id: customer.id,
         ...simData,
       });
+      showToast('Simulación guardada', 'success');
       setSimData({ active_users: 1, storage_gb: 0, estimated_api_calls: 0 });
       loadSimulations();
     } catch (error) {
@@ -198,6 +200,9 @@ const CustomerCard: React.FC<CustomerCardProps> = ({
           )}
         </div>
       )}
+      {toasts.map(t => (
+        <Toast key={t.id} message={t.message} type={t.type} onClose={() => dismissToast(t.id)} />
+      ))}
     </div>
   );
 };

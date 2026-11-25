@@ -124,6 +124,9 @@ const SimulationPreviewComponent: React.FC<SimulationPreviewProps> = ({
             </option>
           ))}
         </select>
+        <span style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 500, padding: '4px 8px', background: '#f1f5f9', borderRadius: '4px' }}>
+          Tasa: {(exchangeRates[selectedCurrency] ?? 1).toFixed(2)}
+        </span>
       </div>
 
       {error && <div className="error">{error}</div>}
