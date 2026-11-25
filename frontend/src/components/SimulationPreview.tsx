@@ -8,6 +8,9 @@ interface SimulationPreviewProps {
   exchangeRates: ExchangeRates;
   selectedCurrency: string;
   onCurrencyChange: (currency: string) => void;
+  initialUsers?: number;
+  initialStorage?: number;
+  initialApiCalls?: number;
 }
 
 const SimulationPreviewComponent: React.FC<SimulationPreviewProps> = ({
@@ -16,10 +19,13 @@ const SimulationPreviewComponent: React.FC<SimulationPreviewProps> = ({
   exchangeRates,
   selectedCurrency,
   onCurrencyChange,
+  initialUsers = 10,
+  initialStorage = 100,
+  initialApiCalls = 10000,
 }) => {
-  const [activeUsers, setActiveUsers] = useState(10);
-  const [storageGb, setStorageGb] = useState(100);
-  const [apiCalls, setApiCalls] = useState(10000);
+  const [activeUsers, setActiveUsers] = useState(initialUsers);
+  const [storageGb, setStorageGb] = useState(initialStorage);
+  const [apiCalls, setApiCalls] = useState(initialApiCalls);
   const [preview, setPreview] = useState<SimulationPreviewType | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -28,7 +34,7 @@ const SimulationPreviewComponent: React.FC<SimulationPreviewProps> = ({
     setLoading(true);
     setError(null);
     try {
-      const data = await simulationApi.preview(customerId, activeUsers);
+      const data = await simulationApi.preview(customerId, activeUsers, storageGb, apiCalls);
       setPreview(data);
     } catch (err) {
       setError('Error al calcular la simulación');
@@ -40,7 +46,7 @@ const SimulationPreviewComponent: React.FC<SimulationPreviewProps> = ({
 
   useEffect(() => {
     fetchPreview();
-  }, [customerId, activeUsers]);
+  }, [customerId, activeUsers, storageGb, apiCalls]);
 
   const handleUserChange = (value: number) => {
     setActiveUsers(value);

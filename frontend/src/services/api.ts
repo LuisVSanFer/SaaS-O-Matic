@@ -35,6 +35,10 @@ export const customerApi = {
       c.tax_id.toLowerCase().includes(lowerQuery)
     );
   },
+
+  delete: async (customerId: number): Promise<void> => {
+    await api.delete(`/customers/${customerId}`);
+  },
 };
 
 export const simulationApi = {
@@ -53,16 +57,23 @@ export const simulationApi = {
     return response.data;
   },
 
-  preview: async (customerId: number, activeUsers: number): Promise<SimulationPreview> => {
-    // Get customer to know their country for tax calculation
-    const customer = await customerApi.getById(customerId);
-    const response = await api.post<SimulationPreview>(`/simulations/preview`, {
+  preview: async (
+    customerId: number,
+    activeUsers: number,
+    storageGb: number = 0,
+    estimatedApiCalls: number = 0
+  ): Promise<SimulationPreview> => {
+    const response = await api.post<SimulationPreview>('/simulations/preview', {
       customer_id: customerId,
       active_users: activeUsers,
-      storage_gb: 0,
-      estimated_api_calls: 0,
+      storage_gb: storageGb,
+      estimated_api_calls: estimatedApiCalls,
     });
     return response.data;
+  },
+
+  delete: async (simulationId: number): Promise<void> => {
+    await api.delete(`/simulations/${simulationId}`);
   },
 };
 

@@ -208,6 +208,7 @@ const CustomerSearch: React.FC<CustomerSearchProps> = ({
               exchangeRates={exchangeRates}
               selectedCurrency={selectedCurrency}
               onCurrencyChange={onCurrencyChange}
+              onDelete={loadCustomers}
             />
           ))}
         </div>

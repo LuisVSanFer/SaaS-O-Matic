@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from typing import List
 
@@ -17,7 +18,14 @@ app = FastAPI(
     version="1.0.0"
 )
 
-
+# Allow requests from the React frontend running on port 3000
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @app.get("/health")
@@ -94,6 +102,24 @@ def get_simulation(simulation_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Simulation not found")
     return simulation
 
+@app.delete("/simulations/{simulation_id}", status_code=204)
+def delete_simulation(simulation_id: int, db: Session = Depends(get_db)):
+    sim = db.query(Simulation).filter(Simulation.id == simulation_id).first()
+    if not sim:
+        raise HTTPException(status_code=404, detail="Simulation not found")
+    db.delete(sim)
+    db.commit()
+    return
+
+@app.delete("/customers/{customer_id}", status_code=204)
+def delete_customer(customer_id: int, db: Session = Depends(get_db)):
+    customer = db.query(Customer).filter(Customer.id == customer_id).first()
+    if not customer:
+        raise HTTPException(status_code=404, detail="Customer not found")
+    db.delete(customer)
+    db.commit()
+    return
+
 @app.post("/simulations/preview", response_model=SimulationPreview)
 def preview_simulation(simulation: SimulationCreate, db: Session = Depends(get_db)):
     """Preview simulation pricing without persisting"""
@@ -113,5 +139,4 @@ def preview_simulation(simulation: SimulationCreate, db: Session = Depends(get_d
     )
 
 if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=True)

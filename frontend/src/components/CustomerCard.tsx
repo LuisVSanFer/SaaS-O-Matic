@@ -1,29 +1,32 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { simulationApi, formatCurrency } from '../services/api';
-import SimulationPreview from './SimulationPreview';
+import { simulationApi, customerApi, formatCurrency } from '../services/api';
 import type { Customer, Simulation, ExchangeRates } from '../types';
+import SimulationPreview from './SimulationPreview';
 
 interface CustomerCardProps {
   customer: Customer;
-  exchangeRates: ExchangeRates;
-  selectedCurrency: string;
-  onCurrencyChange: (currency: string) => void;
+  exchangeRates?: ExchangeRates;
+  selectedCurrency?: string;
+  onCurrencyChange?: (c: string) => void;
+  onDelete?: (customerId: number) => void;
 }
 
 const CustomerCard: React.FC<CustomerCardProps> = ({
   customer,
-  exchangeRates,
-  selectedCurrency,
-  onCurrencyChange,
+  exchangeRates = { EUR: 1, USD: 1.08, GBP: 0.86 },
+  selectedCurrency = 'EUR',
+  onCurrencyChange = () => {},
+  onDelete
 }) => {
   const [simulations, setSimulations] = useState<Simulation[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [showSimulations, setShowSimulations] = useState(false);
-  const [creatingSimulation, setCreatingSimulation] = useState(false);
-  const [newSimData, setNewSimData] = useState({
-    active_users: 10,
-    storage_gb: 100,
-    estimated_api_calls: 10000,
+
+  // ESTADO UNIFICADO CON LOS 3 CAMPOS
+  const [simData, setSimData] = useState({
+    active_users: 1,
+    storage_gb: 0,
+    estimated_api_calls: 0,
   });
 
   const loadSimulations = useCallback(async () => {
@@ -32,167 +35,157 @@ const CustomerCard: React.FC<CustomerCardProps> = ({
       const data = await simulationApi.getByCustomer(customer.id);
       setSimulations(data);
     } catch (error) {
-      console.error('Error loading simulations:', error);
+      console.error('Error cargando simulaciones:', error);
     } finally {
       setLoading(false);
     }
   }, [customer.id]);
 
   useEffect(() => {
-    loadSimulations();
-  }, [loadSimulations]);
+    if (showSimulations) loadSimulations();
+  }, [showSimulations, loadSimulations]);
+
 
   const handleCreateSimulation = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const simulation = await simulationApi.create({
+      await simulationApi.create({
         customer_id: customer.id,
-        ...newSimData,
+        ...simData,
       });
-      setSimulations(prev => [simulation, ...prev]);
-      setNewSimData({ active_users: 10, storage_gb: 100, estimated_api_calls: 10000 });
-      setCreatingSimulation(false);
+      setSimData({ active_users: 1, storage_gb: 0, estimated_api_calls: 0 });
+      loadSimulations();
     } catch (error) {
-      console.error('Error creating simulation:', error);
+      alert('Error al crear la simulación');
     }
   };
 
-  const getPlanColor = (plan: string) => {
-    switch (plan.toLowerCase()) {
-      case 'basic': return '#3b82f6';
-      case 'professional': return '#8b5cf6';
-      case 'enterprise': return '#f59e0b';
-      default: return '#6b7280';
+  const handleChange = (field: keyof typeof simData, value: string | number) => {
+    const numValue = typeof value === 'string' ? parseFloat(value) || 0 : value;
+    setSimData(prev => ({ ...prev, [field]: numValue }));
+  };
+
+  const handleDeleteSimulation = async (simulationId: number) => {
+    if (!window.confirm('¿Eliminar esta simulación?')) return;
+    try {
+      await simulationApi.delete(simulationId);
+      setSimulations(prev => prev.filter(s => s.id !== simulationId));
+      alert('Simulación eliminada');
+    } catch (err) {
+      alert('Error al eliminar simulación');
+    }
+  };
+
+  const handleDeleteCustomer = async () => {
+    if (!window.confirm(`¿Eliminar cliente "${customer.company_name}" y TODAS sus simulaciones?`)) return;
+    try {
+      await customerApi.delete(customer.id);
+      alert('Cliente eliminado');
+      if (onDelete) onDelete(customer.id);
+    } catch (err) {
+      alert('Error al eliminar cliente');
     }
   };
 
   return (
-    <div className="customer-card">
-      <div className="card-header">
-        <div>
-          <h3>{customer.company_name}</h3>
-          <span
-            className="plan-badge"
-            style={{ backgroundColor: getPlanColor(customer.plan) }}
+    <div style={{ border: '1px solid #ccc', padding: '15px', margin: '10px 0', borderRadius: '8px', background: '#fff' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+        <h3 style={{ margin: 0 }}>{customer.company_name}</h3>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button
+            onClick={handleDeleteCustomer}
+            style={{ padding: '6px 10px', background: '#ef4444', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
           >
-            {customer.plan}
-          </span>
-        </div>
-        <button
-          className="toggle-btn"
-          onClick={() => setShowSimulations(!showSimulations)}
-        >
-          {showSimulations ? 'Ocultar' : 'Ver'} simulaciones
-        </button>
-      </div>
-
-      <div className="card-details">
-        <div className="detail-row">
-          <span className="label">NIF/CIF:</span>
-          <span className="value">{customer.tax_id}</span>
-        </div>
-        <div className="detail-row">
-          <span className="label">Email:</span>
-          <span className="value">{customer.email}</span>
-        </div>
-        <div className="detail-row">
-          <span className="label">País:</span>
-          <span className="value">{customer.country}</span>
-        </div>
-        <div className="detail-row">
-          <span className="label">Registrado:</span>
-          <span className="value">
-            {new Date(customer.created_at).toLocaleDateString('es-ES')}
-          </span>
+            🗑️ Eliminar
+          </button>
+          <button onClick={() => setShowSimulations(!showSimulations)}>
+            {showSimulations ? 'Ocultar Simulaciones' : 'Ver / Crear Simulaciones'}
+          </button>
         </div>
       </div>
 
-      {/* Simulation Preview */}
-      <SimulationPreview
-        customerId={customer.id}
-        customerCountry={customer.country}
-        exchangeRates={exchangeRates}
-        selectedCurrency={selectedCurrency}
-        onCurrencyChange={onCurrencyChange}
-      />
+      <p><strong>NIF/CIF:</strong> {customer.tax_id} | <strong>País:</strong> {customer.country} | <strong>Plan:</strong> {customer.plan}</p>
+      <p><strong>Email:</strong> {customer.email}</p>
 
-      {/* Simulations History */}
       {showSimulations && (
-        <div className="simulations-section">
-          <div className="section-header">
-            <h4>Historial de Simulaciones</h4>
-            <button
-              className="btn btn-primary"
-              onClick={() => setCreatingSimulation(!creatingSimulation)}
-            >
-              {creatingSimulation ? 'Cancelar' : 'Nueva Simulación'}
-            </button>
-          </div>
+        <div style={{ marginTop: '10px', borderTop: '1px dashed #ccc', paddingTop: '10px' }}>
+          <h4>Simulaciones</h4>
 
-          {creatingSimulation && (
-            <form onSubmit={handleCreateSimulation} className="simulation-form">
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Usuarios activos</label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={newSimData.active_users}
-                    onChange={(e) => setNewSimData(prev => ({ ...prev, active_users: parseInt(e.target.value) || 0 }))}
-                    required
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Almacenamiento (GB)</label>
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.1"
-                    value={newSimData.storage_gb}
-                    onChange={(e) => setNewSimData(prev => ({ ...prev, storage_gb: parseFloat(e.target.value) || 0 }))}
-                    required
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Llamadas API estimadas</label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={newSimData.estimated_api_calls}
-                    onChange={(e) => setNewSimData(prev => ({ ...prev, estimated_api_calls: parseInt(e.target.value) || 0 }))}
-                    required
-                  />
-                </div>
-              </div>
-              <button type="submit" className="btn btn-success">Crear Simulación</button>
-            </form>
-          )}
+          <form onSubmit={handleCreateSimulation} style={{ marginBottom: '15px' }}>
+            <div style={{ display: 'grid', gap: '10px', marginBottom: '10px' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ minWidth: '160px' }}>Usuarios activos:</span>
+                <input
+                  type="number"
+                  min="1"
+                  value={simData.active_users}
+                  onChange={(e) => handleChange('active_users', e.target.value)}
+                  style={{ width: '80px' }}
+                />
+              </label>
+
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ minWidth: '160px' }}>Almacenamiento (GB):</span>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.1"
+                  value={simData.storage_gb}
+                  onChange={(e) => handleChange('storage_gb', e.target.value)}
+                  style={{ width: '80px' }}
+                />
+              </label>
+
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ minWidth: '160px' }}>Llamadas API estimadas:</span>
+                <input
+                  type="number"
+                  min="0"
+                  value={simData.estimated_api_calls}
+                  onChange={(e) => handleChange('estimated_api_calls', e.target.value)}
+                  style={{ width: '100px' }}
+                />
+              </label>
+            </div>
+
+            <SimulationPreview
+              customerId={customer.id}
+              customerCountry={customer.country}
+              exchangeRates={exchangeRates}
+              selectedCurrency={selectedCurrency}
+              onCurrencyChange={onCurrencyChange}
+            />
+
+            <button type="submit" style={{ padding: '8px 16px', background: '#10b981', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
+              Simular y Guardar
+            </button>
+          </form>
 
           {loading ? (
-            <div className="loading">Cargando simulaciones...</div>
+            <p>Cargando...</p>
           ) : simulations.length === 0 ? (
-            <div className="empty-state">No hay simulaciones registradas</div>
+            <p style={{ color: '#666' }}>No hay simulaciones registradas para este cliente.</p>
           ) : (
-            <div className="simulations-list">
+            <ul style={{ listStyle: 'none', padding: 0 }}>
               {simulations.map((sim) => (
-                <div key={sim.id} className="simulation-item">
-                  <div className="sim-info">
-                    <span className="sim-users">{sim.active_users} usuarios</span>
-                    <span className="sim-date">
-                      {new Date(sim.created_at).toLocaleDateString('es-ES')}
-                    </span>
+                <li key={sim.id} style={{ marginBottom: '8px', padding: '8px', background: '#f9fafb', borderRadius: '4px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <div><strong>{sim.active_users} usuarios</strong> | {sim.storage_gb} GB | {sim.estimated_api_calls.toLocaleString()} API calls</div>
+                    <div style={{ fontSize: '13px', color: '#374151' }}>
+                      Base: <strong>{formatCurrency(sim.base_amount_cents, selectedCurrency, exchangeRates)}</strong> +
+                      IVA ({(sim.tax_rate * 100)}%): <strong>{formatCurrency(sim.tax_amount_cents, selectedCurrency, exchangeRates)}</strong> =
+                      Total: <strong style={{ color: 'green' }}>{formatCurrency(sim.total_amount_cents, selectedCurrency, exchangeRates)}</strong>
+                    </div>
                   </div>
-                  <div className="sim-amounts">
-                    <span className="sim-base">
-                      Base: {formatCurrency(sim.base_amount_cents, selectedCurrency, exchangeRates)}
-                    </span>
-                    <span className="sim-total">
-                      Total: {formatCurrency(sim.total_amount_cents, selectedCurrency, exchangeRates)}
-                    </span>
-                  </div>
-                </div>
+                  <button
+                    onClick={() => handleDeleteSimulation(sim.id)}
+                    style={{ padding: '4px 8px', background: '#ef4444', color: '#fff', border: 'none', borderRadius: '3px', cursor: 'pointer', fontSize: '12px' }}
+                  >
+                    🗑️
+                  </button>
+                </li>
               ))}
-            </div>
+            </ul>
           )}
         </div>
       )}

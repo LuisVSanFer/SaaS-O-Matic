@@ -1,33 +1,40 @@
-from pydantic import BaseModel, Field, field_validator
-from typing import Optional
 from datetime import datetime
+from pydantic import BaseModel, EmailStr, field_validator, model_validator
 from .validators import validate_spanish_tax_id
 
+
 class CustomerBase(BaseModel):
-    company_name: str = Field(..., min_length=1, max_length=255)
-    tax_id: str = Field(..., min_length=1, max_length=50)
-    email: str = Field(..., pattern=r'^[^@]+@[^@]+\.[^@]+$')
-    country: str = Field(..., pattern=r'^[A-Z]{2}$')
-    plan: str = Field(..., min_length=1, max_length=100)
+    company_name: str
+    tax_id: str
+    email: EmailStr
+    country: str
+    plan: str
 
-    @field_validator('country')
-    @classmethod
-    def validate_country(cls, v):
-        return v.upper()
-
-    @field_validator('tax_id')
-    @classmethod
-    def validate_tax_id(cls, v, info):
-        country = info.data.get('country', '').upper()
-        if country == 'ES':
-            is_valid, normalized = validate_spanish_tax_id(v)
-            if not is_valid:
-                raise ValueError('Invalid Spanish tax ID (NIF/NIE/CIF)')
-            return normalized
-        return v.strip().upper()
 
 class CustomerCreate(CustomerBase):
-    pass
+    @field_validator("country")
+    @classmethod
+    def validate_country(cls, v: str) -> str:
+        cleaned = v.strip().upper()
+        if len(cleaned) != 2:
+            raise ValueError("Country must be an ISO 3166-1 alpha-2 code (e.g., ES, US)")
+        return cleaned
+
+    @field_validator("tax_id")
+    @classmethod
+    def normalize_tax_id(cls, v: str) -> str:
+        return v.upper().strip().replace(" ", "")
+
+    @model_validator(mode="after")
+    def validate_tax_id_for_country(self) -> "CustomerCreate":
+        # Cross-field validation runs after both country and tax_id are populated
+        if self.country == "ES":
+            is_valid, normalized = validate_spanish_tax_id(self.tax_id)
+            if not is_valid:
+                raise ValueError("Invalid Spanish tax ID (DNI/NIE/CIF)")
+            self.tax_id = normalized
+        return self
+
 
 class CustomerResponse(CustomerBase):
     id: int
@@ -37,16 +44,14 @@ class CustomerResponse(CustomerBase):
         from_attributes = True
 
 
-class SimulationBase(BaseModel):
+class SimulationCreate(BaseModel):
     customer_id: int
-    active_users: int = Field(..., ge=0)
-    storage_gb: float = Field(..., ge=0)
-    estimated_api_calls: int = Field(..., ge=0)
+    active_users: int
+    storage_gb: float
+    estimated_api_calls: int
 
-class SimulationCreate(SimulationBase):
-    pass
 
-class SimulationResponse(SimulationBase):
+class SimulationResponse(SimulationCreate):
     id: int
     base_amount_cents: int
     tax_rate: float
@@ -57,13 +62,14 @@ class SimulationResponse(SimulationBase):
     class Config:
         from_attributes = True
 
+
 class SimulationPreview(BaseModel):
-    active_users: int = Field(..., ge=0)
-    storage_gb: float = Field(..., ge=0)
-    estimated_api_calls: int = Field(..., ge=0)
+    active_users: int
+    storage_gb: float
+    estimated_api_calls: int
     base_amount_cents: int
     tax_rate: float
     tax_amount_cents: int
     total_amount_cents: int
-    currency: str = "EUR"
-    exchange_rate: float = 1.0
+    currency: str
+    exchange_rate: float
