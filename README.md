@@ -49,7 +49,10 @@
 ```bash
 cd backend
 python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
+# Windows:
+venv\Scripts\activate
+# Linux/Mac:
+source venv/bin/activate
 pip install -r requirements.txt
 python -m app.main
 ```
@@ -63,6 +66,19 @@ npm install
 npm start
 ```
 App runs at: **http://localhost:3000**
+
+### Run Backend Tests
+```bash
+cd backend
+python -m pytest
+```
+Expected: **148 tests pass** (validators, pricing, API)
+
+### Deployment Notes
+- SQLite database (`saasomatic.db`) is created automatically on first run
+- Exchange rates fetched live from `open.er-api.com` (no API key needed)
+- CORS configured for `localhost:3000` (frontend dev server)
+- For production: build frontend with `npm run build` and serve static files via FastAPI or nginx
 
 ## 📚 API Reference
 
