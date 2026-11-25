@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { customerApi } from '../services/api';
 import CustomerCard from './CustomerCard';
 import type { Customer, ExchangeRates } from '../types';
+import { useToast } from '../hooks/useToast';
+import { Toast } from './Toast';
 
 interface CustomerSearchProps {
   exchangeRates: ExchangeRates;
@@ -14,6 +16,7 @@ const CustomerSearch: React.FC<CustomerSearchProps> = ({
   selectedCurrency,
   onCurrencyChange,
 }) => {
+  const { toasts, showToast, dismissToast } = useToast();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [filteredCustomers, setFilteredCustomers] = useState<Customer[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -69,8 +72,8 @@ const CustomerSearch: React.FC<CustomerSearchProps> = ({
       loadCustomers();
     } catch (err) {
       console.error('Error creating customer:', err);
-      alert('Error al crear cliente. Verifique que el NIF/CIF sea válido y no exista ya.');
-    }
+      showToast('Error al crear cliente. Verifique que el NIF/CIF sea válido y no exista ya.', 'error');
+    };
   };
 
   const countries = [
@@ -213,6 +216,9 @@ const CustomerSearch: React.FC<CustomerSearchProps> = ({
           ))}
         </div>
       )}
+      {toasts.map(t => (
+        <Toast key={t.id} message={t.message} type={t.type} onClose={() => dismissToast(t.id)} />
+      ))}
     </div>
   );
 };

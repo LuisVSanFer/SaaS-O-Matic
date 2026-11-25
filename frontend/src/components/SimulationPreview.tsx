@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback  } from 'react';
 import { simulationApi, formatCurrency } from '../services/api';
 import type { SimulationPreview as SimulationPreviewType, ExchangeRates } from '../types';
 
@@ -8,9 +8,12 @@ interface SimulationPreviewProps {
   exchangeRates: ExchangeRates;
   selectedCurrency: string;
   onCurrencyChange: (currency: string) => void;
-  initialUsers?: number;
-  initialStorage?: number;
-  initialApiCalls?: number;
+  activeUsers: number;
+  storageGb: number;
+  apiCalls: number;
+  onActiveUsersChange: (value: number) => void;
+  onStorageGbChange: (value: number) => void;
+  onApiCallsChange: (value: number) => void;
 }
 
 const SimulationPreviewComponent: React.FC<SimulationPreviewProps> = ({
@@ -19,18 +22,18 @@ const SimulationPreviewComponent: React.FC<SimulationPreviewProps> = ({
   exchangeRates,
   selectedCurrency,
   onCurrencyChange,
-  initialUsers = 10,
-  initialStorage = 100,
-  initialApiCalls = 10000,
+  activeUsers,
+  storageGb,
+  apiCalls,
+  onActiveUsersChange,
+  onStorageGbChange,
+  onApiCallsChange,
 }) => {
-  const [activeUsers, setActiveUsers] = useState(initialUsers);
-  const [storageGb, setStorageGb] = useState(initialStorage);
-  const [apiCalls, setApiCalls] = useState(initialApiCalls);
   const [preview, setPreview] = useState<SimulationPreviewType | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchPreview = async () => {
+  const fetchPreview = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -42,14 +45,14 @@ const SimulationPreviewComponent: React.FC<SimulationPreviewProps> = ({
     } finally {
       setLoading(false);
     }
-  };
+  }, [customerId, activeUsers, storageGb, apiCalls]);
 
   useEffect(() => {
     fetchPreview();
-  }, [customerId, activeUsers, storageGb, apiCalls]);
+  }, [fetchPreview, customerId, activeUsers, storageGb, apiCalls]);
 
   const handleUserChange = (value: number) => {
-    setActiveUsers(value);
+    onActiveUsersChange(value);
   };
 
   return (
@@ -87,7 +90,7 @@ const SimulationPreviewComponent: React.FC<SimulationPreviewProps> = ({
             max="1000"
             step="10"
             value={storageGb}
-            onChange={(e) => setStorageGb(parseInt(e.target.value))}
+            onChange={(e) => onStorageGbChange(parseInt(e.target.value))}
             className="slider"
           />
         </div>
@@ -102,7 +105,7 @@ const SimulationPreviewComponent: React.FC<SimulationPreviewProps> = ({
             max="1000000"
             step="1000"
             value={apiCalls}
-            onChange={(e) => setApiCalls(parseInt(e.target.value))}
+            onChange={(e) => onApiCallsChange(parseInt(e.target.value))}
             className="slider"
           />
         </div>

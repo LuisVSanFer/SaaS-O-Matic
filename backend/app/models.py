@@ -14,7 +14,7 @@ class Customer(Base):
     plan = Column(String, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
-    simulations = relationship("Simulation", back_populates="customer")
+    simulations = relationship("Simulation", back_populates="customer", cascade="all, delete-orphan")
 
 class Simulation(Base):
     __tablename__ = "simulations"

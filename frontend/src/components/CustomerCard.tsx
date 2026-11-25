@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { simulationApi, customerApi, formatCurrency } from '../services/api';
 import type { Customer, Simulation, ExchangeRates } from '../types';
 import SimulationPreview from './SimulationPreview';
+import { useToast } from '../hooks/useToast';
 
 interface CustomerCardProps {
   customer: Customer;
@@ -18,6 +19,7 @@ const CustomerCard: React.FC<CustomerCardProps> = ({
   onCurrencyChange = () => {},
   onDelete
 }) => {
+  const { showToast } = useToast();
   const [simulations, setSimulations] = useState<Simulation[]>([]);
   const [loading, setLoading] = useState(false);
   const [showSimulations, setShowSimulations] = useState(false);
@@ -56,7 +58,7 @@ const CustomerCard: React.FC<CustomerCardProps> = ({
       setSimData({ active_users: 1, storage_gb: 0, estimated_api_calls: 0 });
       loadSimulations();
     } catch (error) {
-      alert('Error al crear la simulación');
+      showToast('Error al crear la simulación', 'error');
     }
   };
 
@@ -70,20 +72,21 @@ const CustomerCard: React.FC<CustomerCardProps> = ({
     try {
       await simulationApi.delete(simulationId);
       setSimulations(prev => prev.filter(s => s.id !== simulationId));
-      alert('Simulación eliminada');
+      showToast('Simulación eliminada', 'success');
     } catch (err) {
-      alert('Error al eliminar simulación');
+      showToast('Error al eliminar simulación', 'error');
     }
   };
 
   const handleDeleteCustomer = async () => {
     if (!window.confirm(`¿Eliminar cliente "${customer.company_name}" y TODAS sus simulaciones?`)) return;
+
     try {
       await customerApi.delete(customer.id);
-      alert('Cliente eliminado');
+      showToast('Cliente eliminado', 'success');
       if (onDelete) onDelete(customer.id);
     } catch (err) {
-      alert('Error al eliminar cliente');
+      showToast('Error al eliminar cliente', 'error');
     }
   };
 
@@ -154,7 +157,13 @@ const CustomerCard: React.FC<CustomerCardProps> = ({
               exchangeRates={exchangeRates}
               selectedCurrency={selectedCurrency}
               onCurrencyChange={onCurrencyChange}
-            />
+              activeUsers={simData.active_users}
+              storageGb={simData.storage_gb}
+              apiCalls={simData.estimated_api_calls}
+              onActiveUsersChange={(v) => handleChange('active_users', v)}
+              onStorageGbChange={(v) => handleChange('storage_gb', v)}
+              onApiCallsChange={(v) => handleChange('estimated_api_calls', v)}
+            />  
 
             <button type="submit" style={{ padding: '8px 16px', background: '#10b981', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
               Simular y Guardar
