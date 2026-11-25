@@ -5,7 +5,7 @@
 ## 🏗️ Architecture
 
 ```
-┌─────────────────┐     HTTP/JSON      ┌─────────────────┐
+┌─────────────────┐     HTTP/JSON       ┌─────────────────┐
 │   Frontend      │ ◄─────────────────► │    Backend      │
 │  (React + TS)   │                     │  (FastAPI +     │
 │                 │                     │   Python)       │
@@ -13,7 +13,7 @@
                                                   │
                                     ┌─────────────┴─────────────┐
                                     │      SQLite Database      │
-                                    │   (Customers + Simulations)│
+                                    │  (Customers + Simulations)│
                                     └───────────────────────────┘
 ```
 
